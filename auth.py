@@ -62,30 +62,46 @@ class GA4Auth:
         """Generate OAuth authorization URL"""
         try:
             # Try to load from Streamlit secrets first (for cloud deployment)
-            if hasattr(st, 'secrets') and 'google_oauth' in st.secrets:
-                client_config = {
-                    'web': {
-                        'client_id': st.secrets['google_oauth']['client_id'],
-                        'client_secret': st.secrets['google_oauth']['client_secret'],
-                        'auth_uri': st.secrets['google_oauth'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
-                        'token_uri': st.secrets['google_oauth'].get('token_uri', 'https://oauth2.googleapis.com/token'),
-                        'redirect_uris': [st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')]
+            try:
+                if 'google_oauth' in st.secrets:
+                    client_config = {
+                        'web': {
+                            'client_id': st.secrets['google_oauth']['client_id'],
+                            'client_secret': st.secrets['google_oauth']['client_secret'],
+                            'auth_uri': st.secrets['google_oauth'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                            'token_uri': st.secrets['google_oauth'].get('token_uri', 'https://oauth2.googleapis.com/token'),
+                            'redirect_uris': [st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')]
+                        }
                     }
-                }
-                redirect_uri = st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')
-            # Fall back to local file for development
-            elif CLIENT_CONFIG_FILE.exists():
-                with open(CLIENT_CONFIG_FILE, 'r') as f:
-                    client_config = json.load(f)
+                    redirect_uri = st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')
+                # Fall back to local file for development
+                elif CLIENT_CONFIG_FILE.exists():
+                    with open(CLIENT_CONFIG_FILE, 'r') as f:
+                        client_config = json.load(f)
 
-                # Handle both "web" and "installed" type OAuth clients
-                if 'installed' in client_config:
-                    client_config['web'] = client_config['installed']
-                    del client_config['installed']
+                    # Handle both "web" and "installed" type OAuth clients
+                    if 'installed' in client_config:
+                        client_config['web'] = client_config['installed']
+                        del client_config['installed']
 
-                redirect_uri = 'http://localhost:8501'
-            else:
-                return None
+                    redirect_uri = 'http://localhost:8501'
+                else:
+                    st.error("OAuth configuration not found. Please check secrets configuration.")
+                    return None
+            except Exception as secrets_error:
+                # If secrets fails, try local file
+                if CLIENT_CONFIG_FILE.exists():
+                    with open(CLIENT_CONFIG_FILE, 'r') as f:
+                        client_config = json.load(f)
+
+                    if 'installed' in client_config:
+                        client_config['web'] = client_config['installed']
+                        del client_config['installed']
+
+                    redirect_uri = 'http://localhost:8501'
+                else:
+                    st.error(f"Failed to load OAuth config: {secrets_error}")
+                    return None
 
             flow = Flow.from_client_config(
                 client_config,
@@ -108,31 +124,46 @@ class GA4Auth:
         """Complete OAuth flow with authorization code"""
         try:
             # Try to load from Streamlit secrets first (for cloud deployment)
-            if hasattr(st, 'secrets') and 'google_oauth' in st.secrets:
-                client_config = {
-                    'web': {
-                        'client_id': st.secrets['google_oauth']['client_id'],
-                        'client_secret': st.secrets['google_oauth']['client_secret'],
-                        'auth_uri': st.secrets['google_oauth'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
-                        'token_uri': st.secrets['google_oauth'].get('token_uri', 'https://oauth2.googleapis.com/token'),
-                        'redirect_uris': [st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')]
+            try:
+                if 'google_oauth' in st.secrets:
+                    client_config = {
+                        'web': {
+                            'client_id': st.secrets['google_oauth']['client_id'],
+                            'client_secret': st.secrets['google_oauth']['client_secret'],
+                            'auth_uri': st.secrets['google_oauth'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                            'token_uri': st.secrets['google_oauth'].get('token_uri', 'https://oauth2.googleapis.com/token'),
+                            'redirect_uris': [st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')]
+                        }
                     }
-                }
-                redirect_uri = st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')
-            # Fall back to local file for development
-            elif CLIENT_CONFIG_FILE.exists():
-                with open(CLIENT_CONFIG_FILE, 'r') as f:
-                    client_config = json.load(f)
+                    redirect_uri = st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')
+                # Fall back to local file for development
+                elif CLIENT_CONFIG_FILE.exists():
+                    with open(CLIENT_CONFIG_FILE, 'r') as f:
+                        client_config = json.load(f)
 
-                # Handle both "web" and "installed" type OAuth clients
-                if 'installed' in client_config:
-                    client_config['web'] = client_config['installed']
-                    del client_config['installed']
+                    # Handle both "web" and "installed" type OAuth clients
+                    if 'installed' in client_config:
+                        client_config['web'] = client_config['installed']
+                        del client_config['installed']
 
-                redirect_uri = 'http://localhost:8501'
-            else:
-                st.error("OAuth configuration not found")
-                return False
+                    redirect_uri = 'http://localhost:8501'
+                else:
+                    st.error("OAuth configuration not found")
+                    return False
+            except Exception as secrets_error:
+                # If secrets fails, try local file
+                if CLIENT_CONFIG_FILE.exists():
+                    with open(CLIENT_CONFIG_FILE, 'r') as f:
+                        client_config = json.load(f)
+
+                    if 'installed' in client_config:
+                        client_config['web'] = client_config['installed']
+                        del client_config['installed']
+
+                    redirect_uri = 'http://localhost:8501'
+                else:
+                    st.error(f"Failed to load OAuth config: {secrets_error}")
+                    return False
 
             flow = Flow.from_client_config(
                 client_config,
