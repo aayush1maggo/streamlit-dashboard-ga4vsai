@@ -1,0 +1,8 @@
+streamlit
+google-analytics-data
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pandas
+plotly
+numpy
