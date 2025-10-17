@@ -60,23 +60,37 @@ class GA4Auth:
 
     def get_auth_url(self):
         """Generate OAuth authorization URL"""
-        if not CLIENT_CONFIG_FILE.exists():
-            return None
-
         try:
-            # Load the client config
-            with open(CLIENT_CONFIG_FILE, 'r') as f:
-                client_config = json.load(f)
+            # Try to load from Streamlit secrets first (for cloud deployment)
+            if hasattr(st, 'secrets') and 'google_oauth' in st.secrets:
+                client_config = {
+                    'web': {
+                        'client_id': st.secrets['google_oauth']['client_id'],
+                        'client_secret': st.secrets['google_oauth']['client_secret'],
+                        'auth_uri': st.secrets['google_oauth'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                        'token_uri': st.secrets['google_oauth'].get('token_uri', 'https://oauth2.googleapis.com/token'),
+                        'redirect_uris': [st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')]
+                    }
+                }
+                redirect_uri = st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')
+            # Fall back to local file for development
+            elif CLIENT_CONFIG_FILE.exists():
+                with open(CLIENT_CONFIG_FILE, 'r') as f:
+                    client_config = json.load(f)
 
-            # Handle both "web" and "installed" type OAuth clients
-            if 'installed' in client_config:
-                client_config['web'] = client_config['installed']
-                del client_config['installed']
+                # Handle both "web" and "installed" type OAuth clients
+                if 'installed' in client_config:
+                    client_config['web'] = client_config['installed']
+                    del client_config['installed']
+
+                redirect_uri = 'http://localhost:8501'
+            else:
+                return None
 
             flow = Flow.from_client_config(
                 client_config,
                 scopes=SCOPES,
-                redirect_uri='http://localhost:8501'
+                redirect_uri=redirect_uri
             )
 
             auth_url, _ = flow.authorization_url(
@@ -93,19 +107,37 @@ class GA4Auth:
     def authenticate_with_code(self, auth_code):
         """Complete OAuth flow with authorization code"""
         try:
-            # Load the client config
-            with open(CLIENT_CONFIG_FILE, 'r') as f:
-                client_config = json.load(f)
+            # Try to load from Streamlit secrets first (for cloud deployment)
+            if hasattr(st, 'secrets') and 'google_oauth' in st.secrets:
+                client_config = {
+                    'web': {
+                        'client_id': st.secrets['google_oauth']['client_id'],
+                        'client_secret': st.secrets['google_oauth']['client_secret'],
+                        'auth_uri': st.secrets['google_oauth'].get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                        'token_uri': st.secrets['google_oauth'].get('token_uri', 'https://oauth2.googleapis.com/token'),
+                        'redirect_uris': [st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')]
+                    }
+                }
+                redirect_uri = st.secrets['google_oauth'].get('redirect_uri', 'http://localhost:8501')
+            # Fall back to local file for development
+            elif CLIENT_CONFIG_FILE.exists():
+                with open(CLIENT_CONFIG_FILE, 'r') as f:
+                    client_config = json.load(f)
 
-            # Handle both "web" and "installed" type OAuth clients
-            if 'installed' in client_config:
-                client_config['web'] = client_config['installed']
-                del client_config['installed']
+                # Handle both "web" and "installed" type OAuth clients
+                if 'installed' in client_config:
+                    client_config['web'] = client_config['installed']
+                    del client_config['installed']
+
+                redirect_uri = 'http://localhost:8501'
+            else:
+                st.error("OAuth configuration not found")
+                return False
 
             flow = Flow.from_client_config(
                 client_config,
                 scopes=SCOPES,
-                redirect_uri='http://localhost:8501'
+                redirect_uri=redirect_uri
             )
 
             flow.fetch_token(code=auth_code)

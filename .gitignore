@@ -15,6 +15,14 @@ client_secret.json
 user_credentials.json
 *.json
 
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+
 # IDE
 .vscode/
 .idea/
